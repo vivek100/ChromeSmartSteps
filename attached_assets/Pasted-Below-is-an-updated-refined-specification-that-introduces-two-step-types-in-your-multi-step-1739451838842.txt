@@ -1,0 +1,267 @@
+Below is an **updated, refined specification** that introduces **two step types** in your multi-step flow:
+
+1. **Normal Step**:  
+   - Asks the AI for a direct response. (No internal sub-step iteration.)  
+2. **CoT Step**:  
+   - Asks the AI to produce a **JSON plan** conforming to a schema.  
+   - The extension **automatically iterates** over that plan’s sub-steps, each becoming its own AI call, before continuing to the next step in the overall flow.
+
+This design allows **nested or on-the-fly expansions** within a single step in the user-defined flow.
+
+---
+
+## 1. Project Overview
+
+### 1.1 Purpose
+- Build a **Chrome Extension** that orchestrates a **customizable chain-of-thought** for AI chats.
+- A “flow” consists of multiple steps, each step can be:
+  - **Normal Step**: A simple prompt with a single AI response.  
+  - **CoT Step**: A request for a JSON plan + iterative sub-step execution.
+
+### 1.2 Outcome
+- Users define flows from the extension’s **Settings** page, mixing **Normal Steps** and **CoT Steps** as needed.  
+- When the user sends a query to the AI, the extension follows the chosen flow:
+  1. **Normal Step** → Ask once, capture response.  
+  2. **CoT Step** → Ask for a sub-step plan in JSON, parse it, iterate sub-steps, then return.  
+- The user sees a final consolidated answer in the chat window or an overlay.
+
+---
+
+## 2. Step Types in Detail
+
+### 2.1 Normal Step
+- **Behavior**:  
+  - **Prompt Construction**: The extension combines:  
+    1. Original user query  
+    2. (Optionally) All previous steps’ outputs  
+    3. The **system prompt** (or instructions) defined in the step  
+  - **AI Call**: Sends the combined prompt, captures the AI’s single response.  
+  - **Output Handling**: The extension stores this single response for use by future steps.  
+
+- **Use Cases**:  
+  - Quick transformations, checks, or any single-prompt action.  
+  - Example: “Summarize the previous step in 5 bullet points.”
+
+### 2.2 CoT Step
+- **Behavior**:  
+  1. **Prompt for JSON Plan**:  
+     - The extension constructs a prompt similar to a Normal Step but with the **added instructions** about producing a chain-of-thought plan in JSON format.  
+     - The user can define a **JSON schema** or template (e.g., a single-level plan) that the AI must follow.  
+  2. **Parse the Plan**:  
+     - Once the AI’s response is received, the extension extracts the **JSON plan** from the text (using `JSON.parse` or a robust parser).  
+  3. **Iterate Over Plan’s Sub-Steps**:  
+     - For each sub-step in the JSON plan, the extension automatically creates a new prompt:
+       - Includes the **original user query**.  
+       - Includes **previous step outputs** (including previous sub-step outputs).  
+       - Includes **instructions** from the sub-step (found in the JSON).  
+     - Captures the AI’s response for each sub-step.  
+     - Continues until all sub-steps in the plan are complete.  
+  4. **Output Handling**:  
+     - The extension aggregates all sub-step outputs into one final result for this CoT Step.  
+     - That aggregated output can then be passed to subsequent steps in the flow.  
+
+- **Use Cases**:  
+  - Where an on-the-fly breakdown is needed, e.g.:  
+    - “Generate a step-by-step plan for solving this complex problem. Output in JSON.”  
+    - “For each step in your plan, produce the detailed solution.”  
+  - The user can nest multiple CoT Steps in a single flow if needed.
+
+---
+
+## 3. Example Flow with Mixed Step Types
+
+Imagine a user creates a flow with three steps:
+
+1. **Step 1: CoT Step** (“Plan Generation”)  
+   - Prompt: “Please provide a chain-of-thought plan in JSON format with sub-steps for solving the user’s query.”  
+   - The AI returns something like:
+     ```json
+     {
+       "plan": [
+         { "id": 1, "description": "Identify the user’s main problem." },
+         { "id": 2, "description": "Generate possible solutions." },
+         { "id": 3, "description": "Compare solutions and pick the best." }
+       ]
+     }
+     ```
+   - The extension **iterates** over these sub-steps (1→2→3). For each sub-step, it compiles a new prompt and obtains a response.  
+   - After finishing sub-step 3, the extension merges sub-step outputs into a single **Step 1 output**.
+
+2. **Step 2: Normal Step** (“Reflection Step”)  
+   - Prompt: “Reflect on the plan and its results. Are they correct? If not, propose corrections.”  
+   - Single AI response.  
+
+3. **Step 3: Normal Step** (“Final Answer”)  
+   - Prompt: “Now produce a concise final answer for the user’s query, integrating the previous plan’s results and the reflection.”  
+   - Single AI response, which is the final user-facing answer.
+
+When the user toggles this flow “ON” and asks the AI something (e.g., “How do I optimize a personal budget?”), the extension:
+
+1. Intercepts the prompt, runs **Step 1** as a CoT Step:
+   - Asks for a plan.  
+   - Gets a JSON plan with sub-steps.  
+   - Iterates sub-steps, collecting sub-step responses.  
+   - Produces a combined output for Step 1.  
+2. Moves to **Step 2** (Normal Step):
+   - Uses Step 1 output + reflection instructions, gets a single response.  
+3. Moves to **Step 3** (Normal Step):
+   - Generates final consolidated answer.  
+4. Inserts the final answer into the chat window.
+
+---
+
+## 4. Settings Page & Flow Configuration
+
+### 4.1 Defining a Flow
+
+When creating or editing a flow in the **Settings page**:
+- **Flow Name**: e.g., “My Budget Flow.”  
+- **Steps**: A list of step objects:
+  1. **Step Title**: e.g., “Generate Plan”  
+  2. **Step Type**: A dropdown or toggle: *Normal* or *CoT*.  
+  3. **System Prompt**: The text to inject. For a CoT step, include instructions about the JSON plan. For a Normal step, just your usual instructions.  
+
+### 4.2 Default Flow Example
+
+**Default** (shipped) might be:
+
+1. **Step 1 (CoT)**:  
+   - Prompt: “Provide a single-level JSON chain-of-thought plan with sub-steps for solving the user’s prompt.”  
+2. **Step 2 (Normal)**:  
+   - Prompt: “Reflect on the plan’s correctness. Adjust if needed.”  
+3. **Step 3 (Normal)**:  
+   - Prompt: “Deliver the final answer incorporating the plan’s results and reflection.”  
+
+### 4.3 Data Persistence
+- All flows (and their steps) are **stored locally** in `localStorage` or `chrome.storage.local`.  
+- Users can create multiple flows or edit existing ones.  
+- The **active flow** is the one the extension will run upon interception of a user’s prompt.
+
+---
+
+## 5. Execution Logic
+
+1. **User Toggles Flow On**  
+   - In the extension’s popup, user selects from a dropdown of flows.  
+   - Hits “Activate.”  
+
+2. **Interception**  
+   - The extension’s content script sees the user’s chat input.  
+   - If flow is active, it prevents the normal send, and starts the **flow runner**.
+
+3. **Flow Runner**  
+   - For each step in the user’s flow:  
+     - If it’s a **Normal Step**:  
+       - Construct the prompt with `(original user query + previous step outputs + step’s system prompt)`.  
+       - Submit once, store the result.  
+     - If it’s a **CoT Step**:  
+       1. First ask for the JSON plan (same approach as above).  
+       2. Parse out sub-steps from the plan.  
+       3. For each sub-step in that plan, send a prompt with `(original user query + sub-step instructions + prior sub-step outputs)`.  
+       4. Concatenate or store each sub-step’s output.  
+       5. Produce a final combined CoT Step output.  
+   - Move on to the next step until the flow is finished.
+
+4. **Final Output**  
+   - After the **last step** in the flow, the extension has a final answer.  
+   - The extension can:
+     - Insert that text directly into the chat interface as if the user had typed it.  
+     - Or show it in an overlay or separate UI element.
+
+---
+
+## 6. UI & Experience
+
+### 6.1 Extension Popup
+
+- **Flow Dropdown**:  
+  - “Default Flow”  
+  - “My Budget Flow,” “My Marketing Flow,” etc.  
+- **Toggle**: On/Off switch for enabling multi-step flow.  
+- **Settings Button**: Opens the flow management interface.  
+
+### 6.2 Flow Management (Settings Page)
+
+- **Flow List**:  
+  - Each flow has a name, an “Edit” button, and a “Delete” button.  
+- **Edit/Create Flow**:  
+  - A table or list of steps.  
+  - For each step:
+    - Step Title (text input)  
+    - Step Type (select: Normal / CoT)  
+    - System Prompt (textarea)  
+  - Buttons: **Add Step** / **Save Flow** / **Cancel**  
+
+### 6.3 On-Page Overlay (Optional)
+
+- Could show sub-step progress for CoT steps:
+  - “CoT Step #1: Sub-step 1 of 3… done”  
+  - “Sub-step 2 of 3… done”  
+  - “Sub-step 3 of 3… done”  
+  - Then proceed to next step, etc.
+
+---
+
+## 7. Example Use Case: Mixing Normal and CoT Steps
+
+1. **User** sets up a flow:  
+   1. **Step 1 (Normal)**: “Rewrite the user’s question in simpler terms.”  
+   2. **Step 2 (CoT)**: “Now create a plan in JSON to solve that simplified question. Then implement each sub-step.”  
+   3. **Step 3 (Normal)**: “Reflect on the results, correct if needed.”  
+   4. **Step 4 (Normal)**: “Final answer for the user.”  
+2. When the user queries: “How to code a Chrome extension for advanced GPT prompting?”  
+   - Step 1 rewrites it.  
+   - Step 2 triggers a plan + sub-step iteration.  
+   - Step 3 reflection.  
+   - Step 4 final.  
+3. **Output**: The user sees a thoroughly reasoned final answer in the chat window.
+
+---
+
+## 8. Implementation Notes / Next Steps
+
+1. **Manifest V3**: Standard extension scaffolding.  
+2. **Settings Page**: Possibly an `options.html` or a separate `chrome://extensions` “Options” page.  
+3. **Storage**:  
+   - Flows array in `chrome.storage.local`:  
+     ```js
+     [
+       {
+         "id": "flow_default",
+         "name": "Default CoT Flow",
+         "steps": [
+           {
+             "type": "CoT",
+             "prompt": "Provide a single-level JSON plan..."
+           },
+           ...
+         ]
+       },
+       ...
+     ]
+     ```
+4. **Content Script**:  
+   - Intercept user queries.  
+   - For each flow step (and sub-steps for CoT), build prompts and handle AI responses.  
+5. **AI Response Parsing** (especially for CoT Step sub-steps plan):
+   - Use either `JSON.parse` if the AI’s response is well-structured, or a fallback regex approach.  
+   - If the plan is invalid, prompt the user or attempt a re-try.
+
+---
+
+## 9. Conclusion
+
+By introducing **step types** (Normal vs. CoT), you enable a **powerful yet flexible** chain-of-thought system:
+
+- **Normal Step**: Single question → single answer, straightforward.  
+- **CoT Step**: Request for a JSON plan (sub-steps) → automatically handle each sub-step.  
+
+The user-friendly **Settings Page** for custom flows ensures **extensibility**: different scenarios (research, brainstorming, code generation) can be covered by custom flows, mixing normal and CoT steps in any sequence.
+
+**Key Advantages**:
+
+- **On-the-fly nested reasoning** in a single flow step (CoT).  
+- **Customizable flows** for advanced uses.  
+- **Straightforward UI** that lets users choose or design how the AI should approach complex questions.
+
+With this specification, you should have a clear path to **implement** the Chrome extension that meets your multi-step chaining, CoT plan generation, and **flexible flow** requirements.
