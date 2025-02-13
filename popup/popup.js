@@ -8,10 +8,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const stepProgress = document.getElementById('stepProgress');
   const statusIndicator = document.querySelector('.status-indicator');
 
-  // Add status indicator
+  // Status indicator is already in HTML
   statusIndicator.className = 'status-indicator';
   statusIndicator.textContent = 'Ready';
-  document.querySelector('.container').appendChild(statusIndicator);
 
   async function updateStatus(message, isError = false) {
     statusIndicator.textContent = message;
@@ -105,16 +104,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         const status = index < currentStepIndex ? 'completed' : 
                       index === currentStepIndex ? 'active' : 'pending';
 
+        const statusEmoji = status === 'completed' ? '✅' : 
+                          status === 'active' ? '🔄' : '⏳';
+
         stepEl.innerHTML = `
           <span class="step-name">${step.title}</span>
           <span class="step-status ${status}">
-            ${status === 'completed' ? '✓' : 
-              status === 'active' ? '...' : '•'}
+            ${statusEmoji}
           </span>
         `;
         stepProgress.appendChild(stepEl);
       });
     }
+</old_str>
 
     // Listen for step updates from content script
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

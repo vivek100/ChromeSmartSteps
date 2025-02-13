@@ -28,14 +28,24 @@ let flowRunner = null;
 let waitingForResponse = false;
 
 // Listen for messages from popup
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.type === 'FLOW_STATE_CHANGED') {
     isEnabled = message.enabled;
     if (isEnabled) {
       flowRunner = new FlowRunner();
-      flowRunner.setDebug(true); // Enable debug mode for development
+      flowRunner.setDebug(true);
     } else {
       flowRunner = null;
+    }
+  } else if (message.type === 'START_FLOW') {
+    const { flows } = await chrome.storage.local.get('flows');
+    const flow = flows.find(f => f.id === message.flowId);
+    if (flow && flowRunner) {
+      const inputElement = findChatElement(CHAT_INTERFACE_SELECTORS.input);
+      if (inputElement) {
+        const userQuery = inputElement.value || inputElement.textContent;
+        flowRunner.executeFlow(flow, userQuery);
+      }
     }
   }
 });
