@@ -1,0 +1,188 @@
+Below is a **detailed user interaction flow** for how the extension will orchestrate a chain-of-thought process on an AI chat page. This flow integrates your requirement that the user can start the process at any point, the extension automatically sends prompts step-by-step, and a final consolidated output appears on a new page.
+
+---
+
+## 1. High-Level Summary
+
+1. **User Preparation**: The user must have **an original prompt typed** in the chat (or at least in the chat’s input field).  
+2. **Start Chain-of-Thought**: The user **clicks a “Start CoT” button** (or similar) in the extension’s interface.  
+3. **Flow Execution**: The extension:
+   1. Reads the **user’s prompt** from the chat input (or checks the last user message).  
+   2. Executes each step in the **selected flow** (Normal or CoT Step).  
+   3. Automatically **inserts** prompts into the chat input and **clicks “Send”** for each step/sub-step.  
+   4. Captures **AI responses** from the chat.  
+4. **Finalize & Display**: When the flow is finished, the extension:
+   - **Gathers** all step outputs (and sub-step outputs if CoT steps were involved).  
+   - Opens a **new HTML page** (provided by the extension) displaying the consolidated chain-of-thought outputs.
+
+Below, we break this down into more **granular** steps so you can see exactly how the user interacts with the extension and how the extension handles each part of the flow.
+
+---
+
+## 2. Detailed User Flow
+
+### 2.1 Before Starting the Chain-of-Thought
+1. **User Types Prompt in AI Chat**  
+   - The user visits ChatGPT, Claude, or Google AI Studio, and types a question or request in the standard chat input field.  
+   - Example: “Explain the benefits of daily meditation.”  
+   - *At this point, they have **not** clicked the native “Send” button on the AI’s page yet—or they may have typed it but not fully submitted.*  
+
+2. **User Opens Extension Popup**  
+   - The user clicks on the extension’s icon in Chrome.  
+   - In the popup, they see a **list or dropdown** of saved flows (including a default flow).  
+   - The user selects a flow, e.g., **“Plan→Reflect→Final”** or a **custom flow** they have created.
+
+3. **User Clicks “Start CoT Process”**  
+   - The extension checks if there is **a user prompt** in the chat input.  
+   - If **no prompt** is found, the extension **displays an error**: “Please enter your question in the chat box first.”
+
+### 2.2 Starting the Chain-of-Thought
+
+Once the user clicks “Start CoT Process”:
+
+1. **Validate or Retrieve User’s Prompt**  
+   - The extension reads the chat input field.  
+   - Stores that text as the “Original User Prompt” in extension memory.
+
+2. **Initialize Flow State**  
+   - The extension retrieves the **selected flow** (and all step definitions) from local storage or background script memory.  
+   - Sets **currentStep = 1**, and prepares to orchestrate the steps in sequence.
+
+3. **(Optional) Clear or Adjust Chat Input**  
+   - Some extensions will clear the chat input to avoid duplication; others might just overwrite it.  
+   - The extension ensures it’s ready to **inject** the first step’s prompt into the input field.
+
+### 2.3 Executing Each Step
+
+For every **step** in the chosen flow, the process is:
+
+1. **Construct the Prompt**  
+   - Combine:
+     - **Original User Prompt** (e.g., “Explain the benefits of daily meditation.”)  
+     - **All relevant prior step outputs** (if the user flow so dictates).  
+     - **System/Step Prompt** defined in the flow.  
+   - For example, if it’s a **Normal Step**, the system prompt might say:  
+     > “Summarize the user’s question in one paragraph.”  
+   - If it’s a **CoT Step**, the system prompt might say:  
+     > “Please provide a JSON plan detailing sub-steps. Then we will iterate over each sub-step.”  
+
+2. **Insert the Prompt & Click Send**  
+   - The extension **inserts** this combined prompt into the chat’s input field (replacing whatever was there).  
+   - The extension then **programmatically clicks** the chat’s “Send” button.  
+   - This is equivalent to the user manually hitting “Enter/Send,” but automated.
+
+3. **Wait for AI Response**  
+   - The extension monitors the chat output area (using `MutationObserver` or similar) to detect the **AI’s response**.  
+   - Once the response is fully loaded, the extension **reads** and **stores** it internally (e.g., `stepOutputs[currentStep] = aiResponseText`).
+
+4. **Handle CoT Step (If Applicable)**  
+   - If this step is a **CoT Step**:
+     1. **Parse the JSON plan** from the AI’s response.  
+     2. For **each sub-step** in that plan:
+        - Construct a new sub-step prompt (similar to the step prompt logic: original user prompt + sub-step instructions + prior sub-step outputs).  
+        - Insert and send that sub-step prompt, wait for the sub-step response, store it.  
+     3. **Combine** all sub-step outputs into a single string or object that becomes the overall **Step output**.  
+   - If it’s a **Normal Step**, we do **not** have sub-steps; we take the single AI response as the final output for that step.
+
+5. **Advance to Next Step**  
+   - `currentStep++`, and the extension repeats the above process until all steps in the flow are done.
+
+### 2.4 Finalizing & Displaying Results
+
+After **all steps** in the flow are completed:
+
+1. **Consolidate Outputs**  
+   - The extension aggregates the outputs from each step (and sub-steps if any).  
+   - It might create a structure like:
+     ```js
+     finalResults = {
+       originalPrompt: "Explain the benefits of daily meditation",
+       stepOutputs: [
+         {
+           stepNumber: 1,
+           stepTitle: "Request Plan",
+           output: "AI's text for the plan or sub-step breakdown"
+         },
+         {
+           stepNumber: 2,
+           stepTitle: "Reflection",
+           output: "Reflections from the AI"
+         },
+         {
+           stepNumber: 3,
+           stepTitle: "Final Answer",
+           output: "Comprehensive final answer"
+         }
+       ]
+     }
+     ```
+2. **Show Final Page**  
+   - The extension **opens a new HTML page** (within the extension) to display these results.  
+   - That page might show:
+     - The **original user prompt**.  
+     - A **section for each step** with its final output or sub-step details.  
+     - Possibly a “Copy to Clipboard” or “Download” button.  
+   - The user can read or save the entire chain-of-thought conversation for reference.
+
+3. **Option to Inject Final Answer**  
+   - If desired, the extension can also **insert** the final step’s output back into the chat window.  
+   - This is optional. Some users might only want to read the consolidated output on the new HTML page.
+
+---
+
+## 3. Edge Cases & Considerations
+
+1. **No Original Prompt**  
+   - If the user tries to start the chain-of-thought without typing anything in the chat input, the extension should show an **error**:  
+     > “No user prompt found in the chat input. Please enter a query first.”
+2. **AI Response Delays**  
+   - The extension must wait for the AI’s message to finish rendering. Using a `MutationObserver` or a short poll can handle this.  
+3. **Partial or Invalid JSON (CoT Step)**  
+   - If the AI fails to produce valid JSON in a CoT step, the extension might attempt to re-ask or show an error.  
+4. **Multiple Flow Execution**  
+   - If the user starts a second chain-of-thought while the first is in progress, the extension might need to queue or disallow concurrency.  
+5. **Privacy**  
+   - Because it’s local usage, the chain-of-thought data is not sent anywhere except to the AI model on the page. It can remain in memory or local storage for the user’s convenience.
+
+---
+
+## 4. Putting It All Together
+
+**Overall Workflow**:
+
+1. **User**: Types a prompt in chat → opens extension → chooses a flow → clicks “Start CoT.”  
+2. **Extension**: Verifies prompt → loads flow → **Step 1** → sends → AI response → store.  
+3. If **Step 1** is CoT: parse JSON → sub-steps → for each sub-step, generate prompt → send → store sub-step output → combine sub-steps into Step 1 final output.  
+4. **Next Steps**: repeat, collecting outputs.  
+5. **Final Step**: extension merges all results → opens new HTML summary page.
+
+In this manner, you offer a **seamless** user experience:
+
+- Minimal friction: The user just has to ensure they typed a question, then click “Start.”  
+- Transparent chain-of-thought: The final output page shows exactly how each step was handled.  
+- Flexible flows: The user can define any multi-step strategy, from a simple normal step to complex sub-step expansions.
+
+---
+
+### Sample Scenario
+
+1. **User’s Prompt**: “Explain how I can build muscle effectively and safely.” (typed in ChatGPT’s input box).  
+2. **Extension**:  
+   - User opens it, picks the flow: “Plan→Reflect→Final.”  
+   - Clicks “Start CoT.”  
+3. **Step 1 (CoT)**: “Please provide a JSON plan for building muscle effectively, with sub-steps for diet, exercise, and rest.” → AI returns plan with sub-steps → extension iterates each sub-step.  
+4. **Step 2 (Normal)**: “Reflect on this plan. Are there potential pitfalls or missing elements?” → AI single response.  
+5. **Step 3 (Normal)**: “Combine sub-steps and reflection into a comprehensive final answer.” → AI final response.  
+6. **Consolidation**: Extension opens a new HTML page showing the plan, reflection, and final answer altogether.  
+
+---
+
+## 5. Conclusion
+
+This **detailed flow** ensures that:
+
+- **At any point** where a user has a typed prompt, they can launch the chain-of-thought process.  
+- The extension takes over **sending** the messages step-by-step, collecting the AI responses from the chat.  
+- In the end, **a new HTML page** displays a consolidated record of the entire chain-of-thought process for easy reference, saving, or sharing.  
+
+You can refine any portion (such as how you handle sub-steps or how you display the final results), but this outline gives a **comprehensive** user interaction model for your Chrome extension’s multi-step CoT process.

@@ -1,0 +1,155 @@
+## **1. Chrome Extension Popup UI (Minimalist & Quick Access)**
+
+### **1.1 Features**
+- Quick toggle to enable/disable Chain-of-Thought mode.
+- Dropdown to select an existing CoT flow.
+- "Start CoT Process" button (disables if no user prompt is detected).
+- Live step-by-step progress indicator.
+- Button to open the **Settings Page** for flow creation/editing.
+
+### **1.2 Layout & Components**
+#### **Header Section**
+- Extension **name/logo** on the left.
+- A **settings icon (⚙️)** on the right (opens the settings page).
+
+#### **Main Panel**
+- **Enable Toggle:** `🔘 Enable Chain-of-Thought Execution`
+- **Flow Selection Dropdown:** `📜 Select a CoT Flow`
+  - Defaults to “Default Plan → Reflect → Final”
+  - Allows switching between saved flows.
+- **Status Panel**: `🔄 Status: Waiting for Start`
+- **Step Progress List:** (Appears dynamically during execution)
+  - ✅ Step 1: AI Generating Plan…
+  - ✅ Step 2: Reflecting on Plan…
+  - ⏳ Step 3: Producing Final Answer…
+- **CTA Button:** `🚀 Start CoT Process`  
+  - **Disabled** if no user prompt detected.
+- **Footer Section**
+  - `📊 View Final Report` (only appears after execution is complete)
+
+---
+
+## **2. Settings Page UI (Full Flow Configuration & Management)**
+
+**Goal:** Allow users to create, modify, and save Chain-of-Thought flows.
+
+### **2.1 Features**
+- View **all saved CoT flows**.
+- Create a **new flow**.
+- Edit or delete existing flows.
+- Configure **step-by-step execution logic** (Normal vs. CoT Step).
+- Define **default prompts & AI interaction styles**.
+
+### **2.2 Layout & Components**
+#### **Header**
+- `🔙 Back to Popup`
+- `⚙️ Chain-of-Thought Flow Settings`
+- `➕ Create New Flow`
+
+#### **Flow Management Panel**
+- **List of Existing Flows** (Collapsible accordion UI)
+  - Example:  
+    ```
+    ▶ Default Flow (Plan → Reflect → Final)  [✏️ Edit]  [🗑️ Delete]
+    ▶ Research Deep Dive                      [✏️ Edit]  [🗑️ Delete]
+    ```
+- **Flow Editor Section** (Only visible when editing/creating)
+  - **Flow Name:** `[_________]`
+  - **Step List (Drag to Reorder)**:
+    ```
+    🔽 Step 1: "Generate Plan (CoT Step)" [✏️ Edit] [🗑️ Delete]
+    🔽 Step 2: "Validate & Reflect (Normal Step)" [✏️ Edit] [🗑️ Delete]
+    🔽 Step 3: "Final Summary (Normal Step)" [✏️ Edit] [🗑️ Delete]
+    ```
+  - **Add Step Button** `➕ Add New Step`
+
+#### **Step Editor Modal (Appears on Edit)**
+- **Step Title:** `[_________]`
+- **Step Type Toggle:** `🔘 Normal Step | 🔘 CoT Step`
+- **System Prompt:**  
+  ```
+  [ __________________________________________________________________ ]
+  ```
+- **Save Step Button** `💾 Save Changes`
+
+#### **Flow Actions**
+- `💾 Save Flow`
+- `🗑️ Delete Flow`
+- `🔙 Cancel`
+
+---
+
+## **3. Results Page UI (Final CoT Execution Summary)**
+
+**Goal:** Display a clean, readable summary of the entire Chain-of-Thought process.
+
+### **3.1 Features**
+- Shows original user query.
+- Displays **step-by-step AI-generated reasoning**.
+- Users can **copy** the results or **download** them.
+- **Return to Chat** button to close the report.
+
+### **3.2 Layout & Components**
+#### **Header**
+- **"Chain-of-Thought Execution Summary"**
+- `📌 Copy to Clipboard | ⬇️ Download Report`
+
+#### **Main Section**
+```
+📌 **User's Original Prompt:**  
+    "How do I build muscle safely and effectively?"
+```
+
+📌 **Step 1: Generate Plan**
+```
+📝 AI Response:
+{
+  "plan": [
+    { "step": 1, "description": "Identify personal fitness goals" },
+    { "step": 2, "description": "Create a progressive workout plan" },
+    { "step": 3, "description": "Optimize diet and recovery" }
+  ]
+}
+```
+
+📌 **Step 2: Reflect on Plan**
+```
+🔎 AI Response: 
+"The plan is comprehensive but could be improved by adding a rest day strategy."
+```
+
+📌 **Step 3: Final Summary**
+```
+✅ AI Response:
+"To build muscle safely, follow a structured progressive overload plan, 
+prioritize protein intake, and ensure proper recovery strategies."
+```
+
+#### **Footer Actions**
+- `🔙 Return to Chat`
+- `📊 View Another CoT Flow`
+
+---
+
+## **4. UX Design Choices & Aesthetic Considerations**
+### **4.1 Colors & Theme**
+- **Dark Mode Friendly**: Many AI chat apps have dark UIs, so the extension should use a **neutral dark theme** (e.g., **#2E2E2E** background, **#FFFFFF** text).
+- **Accent Colors for Steps**:
+  - **CoT Steps** → 🟦 Blue
+  - **Normal Steps** → 🟩 Green
+  - **Errors/Warnings** → 🔴 Red
+
+### **4.2 Fonts & Icons**
+- **Readable Fonts:** Use **Inter, Roboto, or Poppins**.
+- **Lucide Icons** for:
+  - ⚙️ Settings
+  - 🚀 Start Process
+  - 💾 Save Flow
+  - 🗑️ Delete
+  - 📊 View Summary
+  - 🔙 Back to Chat
+
+### **4.3 Animations & Transitions**
+- **Smooth Slide-Down Animation** when starting execution.
+- **Loading Spinner** while waiting for AI responses.
+- **Step-by-Step Progress Bar** appearing dynamically.
