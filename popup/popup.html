@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Flow Control</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h2>AI Flow Control</h2>
+    
+    <div class="flow-selector">
+      <label for="flowSelect">Select Flow:</label>
+      <select id="flowSelect">
+        <option value="default">Default Flow</option>
+      </select>
+    </div>
+
+    <div class="toggle-container">
+      <label class="switch">
+        <input type="checkbox" id="flowToggle">
+        <span class="slider round"></span>
+      </label>
+      <span class="toggle-label">Enable Flow</span>
+    </div>
+
+    <button id="settingsBtn" class="settings-button">
+      Open Settings
+    </button>
+  </div>
+  <script src="../lib/storage.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

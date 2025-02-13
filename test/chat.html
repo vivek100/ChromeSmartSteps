@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Interface Test</title>
+    <style>
+        .chat-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+        .message-input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+        }
+        .assistant-message {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container" class="chat-container">
+        <div id="messages"></div>
+        <textarea 
+            class="message-input" 
+            placeholder="Type your message here..."
+            rows="4"
+        ></textarea>
+    </div>
+
+    <script>
+        const textarea = document.querySelector('.message-input');
+        const messages = document.getElementById('messages');
+
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const text = textarea.value.trim();
+                if (text) {
+                    // Add user message
+                    const userMsg = document.createElement('div');
+                    userMsg.textContent = text;
+                    messages.appendChild(userMsg);
+
+                    // Simulate AI response
+                    setTimeout(() => {
+                        const aiMsg = document.createElement('div');
+                        aiMsg.className = 'assistant-message';
+                        aiMsg.textContent = `Response to: ${text}`;
+                        messages.appendChild(aiMsg);
+                    }, 1000);
+
+                    textarea.value = '';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
