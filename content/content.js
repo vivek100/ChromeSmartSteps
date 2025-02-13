@@ -157,6 +157,18 @@ function setupChatInterception() {
 async function handleChatEvent(e) {
   if (!isEnabled || !activeFlow || !flowRunner) return;
 
+  // Send initial progress
+  const { flows } = await chrome.storage.local.get('flows');
+  const currentFlow = flows.find(f => f.id === activeFlow);
+  if (!currentFlow) return;
+
+  let currentStepIndex = 0;
+  chrome.runtime.sendMessage({
+    type: 'STEP_UPDATE',
+    steps: currentFlow.steps,
+    currentStep: currentStepIndex
+  });
+
   // Find input element using our selectors
   const inputElement = e.target.matches(CHAT_INTERFACE_SELECTORS.input.join(',')) ? 
     e.target : 

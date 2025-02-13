@@ -69,6 +69,67 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
+    startBtn.addEventListener('click', async () => {
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab) return;
+
+        // Get current flow
+        const { flows } = await chrome.storage.local.get('flows');
+        const currentFlow = flows.find(f => f.id === flowSelect.value);
+        if (!currentFlow) return;
+
+        // Update UI
+        footer.classList.remove('hidden');
+        updateStepProgress(currentFlow.steps, 0);
+        updateStatus('Flow started');
+
+        // Send start message to content script
+        await chrome.tabs.sendMessage(tab.id, { 
+          type: 'START_FLOW',
+          flowId: currentFlow.id
+        });
+      } catch (error) {
+        console.error('Failed to start flow:', error);
+        updateStatus('Failed to start flow', true);
+      }
+    });
+
+    // Step progress handling
+    function updateStepProgress(steps, currentStepIndex) {
+      stepProgress.innerHTML = '';
+      steps.forEach((step, index) => {
+        const stepEl = document.createElement('div');
+        stepEl.className = 'step-item';
+
+        const status = index < currentStepIndex ? 'completed' : 
+                      index === currentStepIndex ? 'active' : 'pending';
+
+        stepEl.innerHTML = `
+          <span class="step-name">${step.title}</span>
+          <span class="step-status ${status}">
+            ${status === 'completed' ? '✓' : 
+              status === 'active' ? '...' : '•'}
+          </span>
+        `;
+        stepProgress.appendChild(stepEl);
+      });
+    }
+
+    // Listen for step updates from content script
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.type === 'STEP_UPDATE') {
+        const { steps, currentStep } = message;
+        updateStepProgress(steps, currentStep);
+        updateStatus(`Executing step ${currentStep + 1}`);
+      } else if (message.type === 'FLOW_COMPLETE') {
+        updateStatus('Flow completed');
+        viewReportBtn.classList.remove('hidden');
+      } else if (message.type === 'FLOW_ERROR') {
+        updateStatus(message.error, true);
+      }
+    });
+
     settingsBtn.addEventListener('click', () => {
       chrome.runtime.openOptionsPage();
     });
