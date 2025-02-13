@@ -10,7 +10,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Status indicator is already in HTML
   statusIndicator.className = 'status-indicator';
-  statusIndicator.textContent = 'Ready';
+  function updateFlowStatus(isEnabled) {
+    statusIndicator.textContent = isEnabled ? 'Flow Enabled' : 'Flow Disabled';
+    startBtn.disabled = !isEnabled;
+  }
+  
+  statusIndicator.textContent = 'Flow Disabled';
+  startBtn.disabled = true;
 
   async function updateStatus(message, isError = false) {
     statusIndicator.textContent = message;
@@ -97,6 +103,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Step progress handling
     function updateStepProgress(steps, currentStepIndex) {
       stepProgress.innerHTML = '';
+      if (!steps || steps.length === 0) {
+        const waitingEl = document.createElement('div');
+        waitingEl.className = 'step-item';
+        waitingEl.innerHTML = '<span class="step-name">Waiting for flow to start...</span>';
+        stepProgress.appendChild(waitingEl);
+        return;
+      }
       steps.forEach((step, index) => {
         const stepEl = document.createElement('div');
         stepEl.className = 'step-item';

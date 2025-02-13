@@ -1,24 +1,18 @@
 // Define supported chat interface selectors
 const CHAT_INTERFACE_SELECTORS = {
   input: [
-    'textarea[placeholder*="message" i]',
-    'textarea[placeholder*="chat" i]',
-    'textarea[aria-label*="chat" i]',
-    'input[type="text"][placeholder*="message" i]',
+    '#prompt-textarea',
+    '#composer-background textarea',
     'div[contenteditable="true"]'
   ],
   container: [
-    '#chat-container',
-    '.chat-messages',
-    '.conversation-container',
-    '[aria-label*="chat" i]',
-    'main'
+    'article[data-testid^="conversation-turn-"]'
   ],
   response: [
-    '.assistant-message',
-    '.ai-response',
-    '.chat-message[data-role="assistant"]',
-    '[data-message-author-role="assistant"]'
+    'article[data-testid^="conversation-turn-"] div[data-message-author-role="assistant"]'
+  ],
+  message: [
+    'article[data-testid^="conversation-turn-"] div[data-message-author-role="user"]'
   ]
 };
 

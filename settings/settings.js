@@ -18,13 +18,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     flows.forEach(flow => {
       const flowItem = document.createElement('div');
       flowItem.className = 'flow-item';
-      flowItem.innerHTML = `
-        <span>${flow.name}</span>
-        <div>
-          <button onclick="editFlow('${flow.id}')">Edit</button>
-          <button onclick="deleteFlow('${flow.id}')">Delete</button>
-        </div>
-      `;
+      const span = document.createElement('span');
+      span.textContent = flow.name;
+      
+      const btnContainer = document.createElement('div');
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', () => editFlow(flow.id));
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.addEventListener('click', () => deleteFlow(flow.id));
+      
+      btnContainer.appendChild(editBtn);
+      btnContainer.appendChild(deleteBtn);
+      flowItem.appendChild(span);
+      flowItem.appendChild(btnContainer);
       flowsList.appendChild(flowItem);
     });
   }
