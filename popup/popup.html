@@ -1,31 +1,48 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-  <title>AI Flow Control</title>
+  <title>Chain of Thought Flow</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="container">
-    <h2>AI Flow Control</h2>
-    
-    <div class="flow-selector">
-      <label for="flowSelect">Select Flow:</label>
-      <select id="flowSelect">
-        <option value="default">Default Flow</option>
-      </select>
+    <header>
+      <h2>Chain of Thought Flow</h2>
+      <button id="settingsBtn" class="icon-button" title="Settings">⚙️</button>
+    </header>
+
+    <div class="main-panel">
+      <div class="toggle-container">
+        <label class="switch">
+          <input type="checkbox" id="flowToggle">
+          <span class="slider round"></span>
+        </label>
+        <span class="toggle-label">Enable Chain-of-Thought Execution</span>
+      </div>
+
+      <div class="flow-selector">
+        <label for="flowSelect">📜 Select a CoT Flow</label>
+        <select id="flowSelect">
+          <option value="default">Default Plan → Reflect → Final</option>
+        </select>
+      </div>
+
+      <div class="status-panel">
+        <div class="status-indicator">🔄 Status: Waiting for Start</div>
+        <div id="stepProgress" class="step-progress"></div>
+      </div>
+
+      <button id="startBtn" class="cta-button">
+        🚀 Start CoT Process
+      </button>
     </div>
 
-    <div class="toggle-container">
-      <label class="switch">
-        <input type="checkbox" id="flowToggle">
-        <span class="slider round"></span>
-      </label>
-      <span class="toggle-label">Enable Flow</span>
-    </div>
-
-    <button id="settingsBtn" class="settings-button">
-      Open Settings
-    </button>
+    <footer id="footer" class="footer hidden">
+      <button id="viewReportBtn" class="link-button">
+        📊 View Final Report
+      </button>
+    </footer>
   </div>
   <script src="../lib/storage.js"></script>
   <script src="popup.js"></script>

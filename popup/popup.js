@@ -2,7 +2,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const flowSelect = document.getElementById('flowSelect');
   const flowToggle = document.getElementById('flowToggle');
   const settingsBtn = document.getElementById('settingsBtn');
-  const statusIndicator = document.createElement('div');
+  const startBtn = document.getElementById('startBtn');
+  const viewReportBtn = document.getElementById('viewReportBtn');
+  const footer = document.getElementById('footer');
+  const stepProgress = document.getElementById('stepProgress');
+  const statusIndicator = document.querySelector('.status-indicator');
 
   // Add status indicator
   statusIndicator.className = 'status-indicator';
